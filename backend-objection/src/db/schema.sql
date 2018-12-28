@@ -35,3 +35,21 @@ create table subscription (
     wishlist_id integer references wishlist not null,
     subscriber_id integer references users not null
 );
+
+create type email_type as enum (
+    'new_item_on_subscribed_list',
+    'item_claimed_on_owned_list',
+    'item_revoked_on_owned_list',
+    'item_revoked_that_you_claimed'
+);
+
+create table email (
+    id serial primary key,
+    recipient_id integer references users not null,
+    email_type email_type not null,
+    item_id integer references wishlist_item not null,
+    created_at timestamp default current_timestamp,
+    sent_at timestamp,
+    failed_at timestamp,
+    claimed_at timestamp
+);

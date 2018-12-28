@@ -35,7 +35,7 @@ export const mustOwnWishlist = compose(
   },
 );
 
-const paramSigner = new ReallyDangerous(process.env.PARAM_KEY);
+export const paramSigner = new ReallyDangerous(process.env.PARAM_KEY);
 export function unhideParams(
   ...paramNames_: Array<string>
 ): (req: Request, res: Response, next: Function) => void;
