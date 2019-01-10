@@ -32,7 +32,7 @@ POST /logout
 
  */
 
-app.post('/login', bodyParser.json(), async (req, res) => {
+app.post('/api/login', bodyParser.json(), async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
     res.status(400).json({ message: 'must provide email and password' });
@@ -54,7 +54,7 @@ app.post('/login', bodyParser.json(), async (req, res) => {
   res.status(200).json({ result: 'ok', message: 'logged in' });
 });
 
-app.post('/logout', (req, res) => {
+app.post('/api/logout', (req, res) => {
   req.session = null;
   res.status(200).json({ result: 'ok' });
 });
@@ -68,18 +68,23 @@ PATCH /wishlists/<wishlist_id>
  - update an attribute of a wishlist (eg, name)
 */
 
-app.post('/wishlists', bodyParser.json(), requiresLogin, async (req, res) => {
-  const { name } = req.body;
-  const wishlist = await Wishlist.query()
-    .insert({
-      name,
-      owner_id: req.session.userId,
-    })
-    .returning('*');
-  res.json(wishlist);
-});
+app.post(
+  '/api/wishlists',
+  bodyParser.json(),
+  requiresLogin,
+  async (req, res) => {
+    const { name } = req.body;
+    const wishlist = await Wishlist.query()
+      .insert({
+        name,
+        owner_id: req.session.userId,
+      })
+      .returning('*');
+    res.json(wishlist);
+  },
+);
 
-app.get('/wishlists/:wishlistId', async (req, res) => {
+app.get('/api/wishlists/:wishlistId', async (req, res) => {
   let { wishlistId } = req.params;
   const { userId } = req.session;
   let mustOwn = false;
@@ -103,7 +108,7 @@ app.get('/wishlists/:wishlistId', async (req, res) => {
 });
 
 app.patch(
-  '/wishlists/:wishlistId',
+  '/api/wishlists/:wishlistId',
   bodyParser.json(),
   mustOwnWishlist,
   async (req, res) => {
@@ -125,7 +130,7 @@ DELETE /subscriptions/<wishlist_id>
  - unsubscribe from a wishlist
  */
 app.post(
-  '/subscriptions/:wishlistId',
+  '/api/subscriptions/:wishlistId',
   unhideParams,
   requiresLogin,
   async (req, res) => {
@@ -140,7 +145,7 @@ app.post(
 );
 
 app.delete(
-  '/subscriptions/:wishlistId',
+  '/api/subscriptions/:wishlistId',
   unhideParams,
   requiresLogin,
   async (req, res) => {
@@ -166,7 +171,7 @@ PATCH /wishlists/<wishlist_id>/items/<item_id>
  - eg, image_url, description, etc.
  */
 app.post(
-  '/wishlists/:wishlistId/items',
+  '/api/wishlists/:wishlistId/items',
   bodyParser.json(),
   mustOwnWishlist,
   async (req, res) => {
@@ -207,7 +212,7 @@ app.post(
 );
 
 app.patch(
-  '/wishlists/:wishlistId/items/:itemId',
+  '/api/wishlists/:wishlistId/items/:itemId',
   bodyParser.json(),
   mustOwnWishlist,
   async (req, res) => {
@@ -234,7 +239,7 @@ app.patch(
 );
 
 app.delete(
-  '/wishlists/:wishlistId/items/:itemId',
+  '/api/wishlists/:wishlistId/items/:itemId',
   mustOwnWishlist,
   async (req, res) => {
     const { wishlistId, itemId } = req.params;
@@ -258,7 +263,7 @@ DELETE /wishlists/<wishlist_id>/items/<item_id>/claim
  - emails the claimer immediately, unless the claimer is the deleter
 */
 app.post(
-  '/wishlists/:wishlistId/items/:itemId/claim',
+  '/api/wishlists/:wishlistId/items/:itemId/claim',
   unhideParams('wishlistId'),
   requiresLogin,
   async (req, res) => {
@@ -303,7 +308,7 @@ app.post(
 );
 
 app.delete(
-  '/wishlists/:wishlistId/items/:itemId/claim',
+  '/api/wishlists/:wishlistId/items/:itemId/claim',
   requiresLogin,
   async (req, res) => {
     let { wishlistId, itemId } = req.params;
