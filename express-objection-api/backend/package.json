@@ -5,10 +5,18 @@
   "author": "Brian Schiller",
   "license": "UNLICENSED",
   "private": true,
+  "scripts": {
+    "test": "tests/run_tests.sh"
+  },
   "devDependencies": {
     "@types/cookie-session": "^2.0.36",
     "@types/express": "^4.16.0",
+    "@types/jest": "^23.3.12",
     "@types/scrypt": "^6.0.0",
+    "axios": "^0.18.0",
+    "jest": "^23.6.0",
+    "ts-jest": "^23.10.5",
+    "ts-node": "^7.0.1",
     "typescript": "^3.2.2"
   },
   "dependencies": {

@@ -1,10 +1,7 @@
-import { Model } from '../db';
+import { Model } from '../../db';
 
 export enum EmailType {
   new_item_on_subscribed_list = 'new_item_on_subscribed_list',
-  item_claimed_on_owned_list = 'item_claimed_on_owned_list',
-  item_revoked_on_owned_list = 'item_revoked_on_owned_list',
-  item_revoked_that_you_claimed = 'item_revoked_that_you_claimed',
 }
 
 export class Email extends Model {

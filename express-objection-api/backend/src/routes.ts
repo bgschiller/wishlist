@@ -1,6 +1,5 @@
-import express from 'express';
-import cookieSession from 'cookie-session';
-import bodyParser, { json } from 'body-parser';
+import * as express from 'express';
+import { json } from 'body-parser';
 import { verifyUser } from './models/users';
 import {
   requiresLogin,
@@ -12,10 +11,9 @@ import { Wishlist } from './models/wishlists';
 import { Subscription } from './models/subscription';
 import { WishlistItem } from './models/wishlist_item';
 import { Email, EmailType } from './models/email';
-import { transaction } from 'objection';
-import { Claim } from './models/claims';
+const cookieSession = require('cookie-session');
 
-const app = express();
+export const app = express();
 app.use(
   cookieSession({
     name: 'session',
@@ -32,7 +30,7 @@ POST /logout
 
  */
 
-app.post('/api/login', bodyParser.json(), async (req, res) => {
+app.post('/api/login', json(), async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
     res.status(400).json({ message: 'must provide email and password' });
@@ -50,12 +48,12 @@ app.post('/api/login', bodyParser.json(), async (req, res) => {
       .json({ result, message: 'incorrect password for that email' });
     return;
   }
-  req.session.userId = result.id;
+  req.session = { userId: result.id };
   res.status(200).json({ result: 'ok', message: 'logged in' });
 });
 
 app.post('/api/logout', (req, res) => {
-  req.session = null;
+  req.session = undefined;
   res.status(200).json({ result: 'ok' });
 });
 
@@ -68,25 +66,20 @@ PATCH /wishlists/<wishlist_id>
  - update an attribute of a wishlist (eg, name)
 */
 
-app.post(
-  '/api/wishlists',
-  bodyParser.json(),
-  requiresLogin,
-  async (req, res) => {
-    const { name } = req.body;
-    const wishlist = await Wishlist.query()
-      .insert({
-        name,
-        owner_id: req.session.userId,
-      })
-      .returning('*');
-    res.json(wishlist);
-  },
-);
+app.post('/api/wishlists', json(), requiresLogin, async (req, res) => {
+  const { name } = req.body;
+  const wishlist = await Wishlist.query()
+    .insert({
+      name,
+      owner_id: req.session && req.session.userId,
+    })
+    .returning('*');
+  res.json(wishlist);
+});
 
 app.get('/api/wishlists/:wishlistId', async (req, res) => {
   let { wishlistId } = req.params;
-  const { userId } = req.session;
+  const userId = req.session && req.session.userId;
   let mustOwn = false;
   try {
     wishlistId = paramSigner.unsign(wishlistId);
@@ -100,7 +93,7 @@ app.get('/api/wishlists/:wishlistId', async (req, res) => {
   const wishlist = await Wishlist.query()
     .eager('items.claim')
     .findOne({ id: wishlistId });
-  if (mustOwn && userId !== wishlist.owner_id) {
+  if (!wishlist || (mustOwn && userId !== wishlist.owner_id)) {
     res.status(404).json({ status: 'error', message: 'not found' });
     return;
   }
@@ -109,7 +102,7 @@ app.get('/api/wishlists/:wishlistId', async (req, res) => {
 
 app.patch(
   '/api/wishlists/:wishlistId',
-  bodyParser.json(),
+  json(),
   mustOwnWishlist,
   async (req, res) => {
     const { wishlistId } = req.params;
@@ -137,7 +130,7 @@ app.post(
     const { wishlistId } = req.params;
     const subscription = {
       wishlist_id: wishlistId,
-      subscriber_id: req.session.userId,
+      subscriber_id: req.session && req.session.userId,
     };
     await Subscription.query().insert(subscription);
     res.json(subscription);
@@ -150,7 +143,7 @@ app.delete(
   requiresLogin,
   async (req, res) => {
     const { wishlistId } = req.params;
-    const { userId } = req.session;
+    const userId = req.session && req.session.userId;
     await Subscription.query()
       .delete()
       .where({
@@ -172,7 +165,7 @@ PATCH /wishlists/<wishlist_id>/items/<item_id>
  */
 app.post(
   '/api/wishlists/:wishlistId/items',
-  bodyParser.json(),
+  json(),
   mustOwnWishlist,
   async (req, res) => {
     const { wishlistId } = req.params;
@@ -213,7 +206,7 @@ app.post(
 
 app.patch(
   '/api/wishlists/:wishlistId/items/:itemId',
-  bodyParser.json(),
+  json(),
   mustOwnWishlist,
   async (req, res) => {
     const { wishlistId, itemId } = req.params;
@@ -251,111 +244,5 @@ app.delete(
       });
     if (numRows > 0) res.json({ status: 'ok' });
     else res.status(404).json({ status: 'error', message: 'record not found' });
-  },
-);
-
-/*
-POST /wishlists/<wishlist_id>/items/<item_id>/claim
- - claim a wishlist item (commit to purchase it)
- - queue an email to the owner
-DELETE /wishlists/<wishlist_id>/items/<item_id>/claim
- - revoke a claim to a wishlist item
- - emails the claimer immediately, unless the claimer is the deleter
-*/
-app.post(
-  '/api/wishlists/:wishlistId/items/:itemId/claim',
-  unhideParams('wishlistId'),
-  requiresLogin,
-  async (req, res) => {
-    const { wishlistId, itemId } = req.params;
-    const { userId } = req.session;
-    const maybe_claim = await transaction(
-      WishlistItem.knex(),
-      async (trx): Promise<Claim | 'a_claim_exists'> => {
-        const existingClaims = await Claim.query(trx).where({
-          wishlist_item_id: itemId,
-          revoked_at: null,
-        });
-        if (existingClaims.length > 0) {
-          return 'a_claim_exists';
-        }
-        const claim = await Claim.query(trx)
-          .insert({
-            wishlist_item_id: itemId,
-            claimer_id: userId,
-          })
-          .returning('*');
-        return claim;
-      },
-    );
-
-    const wishlist = await Wishlist.query().findById(wishlistId);
-
-    await Email.query().insert({
-      recipient_id: wishlist.owner_id,
-      email_type: EmailType.item_claimed_on_owned_list,
-      item_id: itemId,
-    });
-    if (maybe_claim === 'a_claim_exists') {
-      res.status(400).json({
-        status: 'error',
-        message: 'That item has already been claimed',
-      });
-    } else {
-      res.json(maybe_claim);
-    }
-  },
-);
-
-app.delete(
-  '/api/wishlists/:wishlistId/items/:itemId/claim',
-  requiresLogin,
-  async (req, res) => {
-    let { wishlistId, itemId } = req.params;
-    const { userId } = req.session;
-    let mustOwn = false;
-    try {
-      wishlistId = paramSigner.unsign(wishlistId);
-    } catch {
-      // if not possible to unsign, probably it was never signed.
-      // URLs like "/wishlists/1" are vulnerable to enumeration attacks. We want
-      // wishlists to only be visible to people with whom they are shared.
-      // however, the owner should be able to access from the regular url
-      mustOwn = true;
-    }
-    const wishlist = await Wishlist.query().findById(wishlistId);
-    if (!wishlist || (mustOwn && wishlist.owner_id !== userId)) {
-      res.status(404).json({
-        status: 'error',
-        message: 'Wishlist could not be found',
-      });
-    }
-    const isOwner = wishlist.owner_id === userId;
-    const searchConditions: Partial<Claim> = isOwner
-      ? { wishlist_item_id: itemId, revoked_at: null }
-      : { wishlist_item_id: itemId, revoked_at: null, claimer_id: userId };
-    const claim = await Claim.query()
-      .update({
-        revoked_at: Claim.knex().fn.now(),
-      })
-      .where(searchConditions)
-      .returning('*')
-      .first();
-
-    if (isOwner) {
-      await Email.query().insert({
-        item_id: itemId,
-        email_type: EmailType.item_revoked_that_you_claimed,
-        recipient_id: claim.claimer_id,
-      });
-    } else {
-      await Email.query().insert({
-        item_id: itemId,
-        email_type: EmailType.item_revoked_on_owned_list,
-        recipient_id: wishlist.owner_id,
-      });
-    }
-
-    res.json(claim);
   },
 );

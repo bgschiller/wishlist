@@ -1,4 +1,4 @@
-import { Model } from '../db';
+import { Model } from '../../db';
 
 export class WishlistItem extends Model {
   static tableName = 'wishlist_item';
@@ -10,7 +10,6 @@ export class WishlistItem extends Model {
   description: string;
 
   static get relationMappings() {
-    const { Claim } = require('./claim');
     const { Wishlist } = require('./wishlist');
     const { User } = require('./users');
 
@@ -21,27 +20,6 @@ export class WishlistItem extends Model {
         join: {
           from: 'wishlist_item.wishlist_id',
           to: 'wishlist.id',
-        },
-      },
-      claim: {
-        relation: Model.HasOneRelation,
-        modelClass: Claim,
-        join: {
-          from: 'wishlist_item.id',
-          to: 'claim.wishlist_item_id',
-        },
-      },
-      claimer: {
-        relation: Model.HasOneThroughRelation,
-        modelClass: User,
-        join: {
-          from: 'wishlist_item.id',
-          through: {
-            modelClass: Claim,
-            from: 'claim.wishlist_item_id',
-            to: 'claim.claimer_id',
-          },
-          to: 'user.id',
         },
       },
     };

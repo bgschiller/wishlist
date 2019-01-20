@@ -22,14 +22,6 @@ create table wishlist_item (
 );
 -- images will be uploaded to S3, and only the URL stored here.
 
-create table claim (
-    id serial primary key,
-    wishlist_item_id integer references wishlist_item not null,
-    claimer_id integer references users not null,
-    created_at timestamp default current_timestamp,
-    revoked_at timestamp,
-);
-
 create table subscription (
     id serial primary key,
     wishlist_id integer references wishlist not null,
@@ -37,10 +29,7 @@ create table subscription (
 );
 
 create type email_type as enum (
-    'new_item_on_subscribed_list',
-    'item_claimed_on_owned_list',
-    'item_revoked_on_owned_list',
-    'item_revoked_that_you_claimed'
+    'new_item_on_subscribed_list'
 );
 
 create table email (

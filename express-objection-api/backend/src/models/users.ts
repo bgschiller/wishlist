@@ -1,5 +1,5 @@
-import { paramsSync, verifyKdf } from 'scrypt';
-import { Model } from '../db';
+import { paramsSync, verifyKdf, kdf } from 'scrypt';
+import { Model } from '../../db';
 
 export class User extends Model {
   static get tableName() {
@@ -13,7 +13,6 @@ export class User extends Model {
   static get relationMappings() {
     const { Wishlist } = require('./wishlists');
     const { Subscription } = require('./subscriptions');
-    const { Claim } = require('./claims');
     return {
       wishlists: {
         relation: Model.HasManyRelation,
@@ -36,14 +35,6 @@ export class User extends Model {
           to: 'wishlist.id',
         },
       },
-      claims: {
-        relation: Model.HasManyRelation,
-        modelClass: Claim,
-        join: {
-          from: 'user.id',
-          to: 'claim.claimer_id',
-        },
-      },
     };
   }
 }
@@ -59,4 +50,8 @@ export async function verifyUser(
   const isCorrect = await verifyKdf(Buffer.from(user.pw_hash), password);
   if (!isCorrect) return 'incorrect_password';
   return user;
+}
+
+export async function hashPassword(password: string): Promise<Buffer> {
+  return kdf(password, scriptParams);
 }

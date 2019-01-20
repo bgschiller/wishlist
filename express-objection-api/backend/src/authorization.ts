@@ -4,7 +4,7 @@ import { Wishlist } from './models/wishlists';
 import { Request, Response } from 'express';
 
 export function requiresLogin(req, res, next) {
-  if (!req.session.user_id) {
+  if (!req.session || !req.session.user_id) {
     res.status(401).json({
       result: 'error',
       message: 'You must be logged in to access this route',

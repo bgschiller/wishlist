@@ -1,4 +1,4 @@
-import { Model } from '../db';
+import { Model } from '../../db';
 
 export class Wishlist extends Model {
   static tableName = 'wishlist';
