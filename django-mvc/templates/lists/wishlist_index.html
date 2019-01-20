@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h2>My Wishlists</h2>
+    <ul>
+        {% for wlist in wishlists %}
+            <li><a href="{{ wlist.get_absolute_url }}">{{ wlist.name }}</a></li>
+        {% endfor %}
+    </ul>
+    <h3>Create a new Wishlist</h3>
+    <form action="{{ create_url }}" method="post">
+        {% csrf_token %}
+        {{ create_form }}
+        <input type="submit" value="Create" />
+    </form>
+{% endblock %}

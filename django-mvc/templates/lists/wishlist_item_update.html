@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <a href="{{ object.wishlist.get_absolute_url }}">
+        back to {{ object.wishlist.name }}
+    </a>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <input type="submit" value="Update" />
+    </form>
+
+
+{% endblock %}
