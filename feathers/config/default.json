@@ -1,0 +1,37 @@
+{
+  "host": "localhost",
+  "port": 3030,
+  "public": "../public/",
+  "paginate": {
+    "default": 10,
+    "max": 50
+  },
+  "authentication": {
+    "secret": "acee4210f6486306aa8dba1eedd7a24b47290e2fd8c28ee37f8294f1014761a95467bd47ec0bd35c1ca89a42676eb4713310ca60efeecc0ac44b57c9d115e2c40dae8d5f9edab6e7d9bc2727a40e43e4f3632598fab1ea4734f4f2559daf6e4a5e651ce8bafd6da935dfafb63118773acf9b47e3e87719d0191d7a79ba9fdc415ac68ef3adf992f292c615aa9daa0c63f67a4e7eb7a151e50a6102c58f8bd4fa04f96636b2d35b611eb536679c329b7dbe575a73d407cb60fa1343abfaf67937e9235dc73e202f455f6eacf272480f2c9f698765df9da682bea81e69c665939a1f91b2ce11c78486e1e121ea4432a522c5f69fa592f6b538cc64537d19ce96b5",
+    "strategies": [
+      "jwt",
+      "local"
+    ],
+    "path": "/authentication",
+    "service": "users",
+    "jwt": {
+      "header": {
+        "typ": "access"
+      },
+      "audience": "https://yourdomain.com",
+      "subject": "anonymous",
+      "issuer": "feathers",
+      "algorithm": "HS256",
+      "expiresIn": "1d"
+    },
+    "local": {
+      "entity": "user",
+      "usernameField": "email",
+      "passwordField": "password"
+    }
+  },
+  "postgres": {
+    "client": "pg",
+    "connection": "postgres://postgres:@localhost:5432/feathers_wishlist"
+  }
+}
