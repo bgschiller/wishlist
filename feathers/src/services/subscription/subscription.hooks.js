@@ -1,16 +1,21 @@
+const { disallow } = require('feathers-hooks-common');
 const { authenticate } = require('@feathersjs/authentication').hooks;
 
+const subscribeOnlySelf = require('../../hooks/subscribe-only-self');
+
 const mustBeOwner = require('../../hooks/must-be-owner');
-const mustOwnWishlist = mustBeOwner({ modelProp: 'owner_id' });
+
 module.exports = {
   before: {
     all: [ authenticate('jwt') ],
-    find: [],
-    get: [],
-    create: [],
-    update: [mustOwnWishlist],
-    patch: [mustOwnWishlist],
-    remove: [mustOwnWishlist]
+    find: [disallow()],
+    get: [disallow()],
+    create: [subscribeOnlySelf()],
+    update: [disallow()],
+    patch: [disallow()],
+    remove: [mustBeOwner({
+      modelProp: 'subscriber_id'
+    })]
   },
 
   after: {

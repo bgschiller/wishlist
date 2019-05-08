@@ -1,7 +1,8 @@
+const knex = require('knex');
 /* eslint-disable no-console */
 
 // wishlist-model.js - A KnexJS
-// 
+//
 // See http://knexjs.org/
 // for more of what you can do here.
 module.exports = function (app) {
@@ -11,13 +12,15 @@ module.exports = function (app) {
     if(!exists) {
       db.schema.createTable(tableName, table => {
         table.increments('id');
-        table.string('text');
+        table.string('name');
+        table.timestamp('created_at').defaultTo(knex.fn.now());
+        table.foreign('owner_id').references('id').inTable('users')
       })
         .then(() => console.log(`Created ${tableName} table`))
         .catch(e => console.error(`Error creating ${tableName} table`, e));
     }
   });
-  
+
 
   return db;
 };
